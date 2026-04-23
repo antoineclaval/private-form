@@ -21,6 +21,11 @@ cd "$PROJECT_ROOT"
 
 STATE_FILE="$PROJECT_ROOT/.remote_setup_state"
 
+# Containers, secrets, and repo-file edits must happen as a non-root user so
+# rootless podman works (design intent). Prefer $SUDO_USER; fall back to the
+# owner of the repo dir (which cloud-init always sets to `deploy`).
+TARGET_USER="${SUDO_USER:-$(stat -c '%U' "$PROJECT_ROOT")}"
+
 print_status()  { echo -e "${GREEN}[✓]${NC} $1"; }
 print_warning() { echo -e "${YELLOW}[!]${NC} $1"; }
 print_error()   { echo -e "${RED}[✗]${NC} $1"; }
@@ -38,6 +43,12 @@ require_root() {
         print_error "This step requires root. Re-run the script with sudo."
         exit 1
     fi
+}
+
+# Run a command as $TARGET_USER via a login shell so the user's XDG_RUNTIME_DIR
+# and systemd-user session are set up — required for rootless podman.
+run_as_user() {
+    sudo --login --user="$TARGET_USER" --preserve-env=EDITOR -- "$@"
 }
 
 # -- Checkpoint helpers --------------------------------------------------------
@@ -66,7 +77,7 @@ step_system_deps() {
     apt-get update -y
     apt-get upgrade -y
     apt-get install -y \
-        podman podman-compose \
+        podman podman-compose aardvark-dns \
         git sqlite3 age cryptsetup-bin curl \
         ufw fail2ban unattended-upgrades
 }
@@ -205,13 +216,13 @@ EOF
 
 step_env() {
     if [ ! -f "$PROJECT_ROOT/.env" ]; then
-        cp "$PROJECT_ROOT/.env.example" "$PROJECT_ROOT/.env"
+        run_as_user cp "$PROJECT_ROOT/.env.example" "$PROJECT_ROOT/.env"
         print_status "Created .env from .env.example"
     fi
 
     print_info "Opening .env in ${EDITOR:-nano}. Set ALLOWED_HOSTS to your real domain(s)."
     read -rp "Press Enter to continue..."
-    "${EDITOR:-nano}" "$PROJECT_ROOT/.env"
+    run_as_user "${EDITOR:-nano}" "$PROJECT_ROOT/.env"
 
     set -a
     # shellcheck source=/dev/null
@@ -239,7 +250,7 @@ step_caddy_config() {
         return 0
     fi
 
-    sed -i.bak "s/yourdomain.org/$domain/g" "$PROJECT_ROOT/Caddyfile"
+    run_as_user sed -i.bak "s/yourdomain.org/$domain/g" "$PROJECT_ROOT/Caddyfile"
     print_status "Caddyfile: yourdomain.org → $domain (backup at Caddyfile.bak)"
 }
 
@@ -249,7 +260,7 @@ step_secrets() {
         return 0
     fi
 
-    sh "$PROJECT_ROOT/deploy/setup_secrets.sh"
+    run_as_user sh "$PROJECT_ROOT/deploy/setup_secrets.sh"
 
     echo ""
     print_error "=============================================================="
@@ -309,13 +320,11 @@ step_dns_verify() {
 }
 
 step_build() {
-    cd "$PROJECT_ROOT"
-    podman compose build
+    run_as_user bash -c "cd '$PROJECT_ROOT' && podman compose build"
 }
 
 step_start() {
-    cd "$PROJECT_ROOT"
-    podman compose up -d
+    run_as_user bash -c "cd '$PROJECT_ROOT' && podman compose up -d"
     print_info "Migrations run automatically from the container entrypoint"
 }
 
@@ -357,6 +366,13 @@ step_verify() {
 
 main() {
     print_header "Mutual Aid Form — VPS Setup"
+
+    if [ "$TARGET_USER" = "root" ]; then
+        print_error "Rootless podman needs a non-root user that owns $PROJECT_ROOT."
+        print_error "Re-clone as a non-root user, then run: sudo ./deploy/remote-setup.sh"
+        exit 1
+    fi
+    print_info "Rootless podman + file ownership will use user: $TARGET_USER"
 
     if [ -f "$STATE_FILE" ]; then
         print_info "Resuming. Completed steps:"

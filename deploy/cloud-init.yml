@@ -31,6 +31,7 @@ package_upgrade: true
 packages:
   - podman
   - podman-compose
+  - aardvark-dns
   - git
   - sqlite3
   - age

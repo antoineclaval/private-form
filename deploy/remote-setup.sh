@@ -77,7 +77,7 @@ step_system_deps() {
     apt-get update -y
     apt-get upgrade -y
     apt-get install -y \
-        podman podman-compose aardvark-dns \
+        podman podman-compose aardvark-dns uidmap passt \
         git sqlite3 age cryptsetup-bin curl \
         ufw fail2ban unattended-upgrades
 }
@@ -158,6 +158,10 @@ vm.swappiness = 0
 
 # NOTE: net.ipv4.ip_forward is intentionally NOT set here.
 # Podman needs it enabled for bridge networking; the distro default is fine.
+
+# Rootless podman binds :80 and :443 for Caddy. Default kernel threshold is
+# 1024; lower it to 80 so the deploy user can publish those ports.
+net.ipv4.ip_unprivileged_port_start = 80
 
 # SYN flood protection
 net.ipv4.tcp_syncookies = 1
@@ -325,6 +329,25 @@ step_build() {
 
 step_start() {
     run_as_user bash -c "cd '$PROJECT_ROOT' && podman compose up -d"
+
+    # `podman compose up -d` exits 0 even when individual containers fail to
+    # start (rootless port bind, image pull error, etc.). Verify each expected
+    # service is actually running so we don't false-positive the checkpoint.
+    local project name status failed=0
+    project="$(basename "$PROJECT_ROOT")"
+    for svc in web caddy; do
+        name="${project}_${svc}_1"
+        status=$(run_as_user podman inspect -f '{{.State.Status}}' "$name" 2>/dev/null || echo missing)
+        if [ "$status" != "running" ]; then
+            print_error "  $name: $status"
+            failed=1
+        fi
+    done
+    if [ "$failed" -ne 0 ]; then
+        print_error "One or more containers failed to start — check: podman logs <name>"
+        exit 1
+    fi
+
     print_info "Migrations run automatically from the container entrypoint"
 }
 

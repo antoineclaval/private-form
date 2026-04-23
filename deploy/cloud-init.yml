@@ -32,6 +32,8 @@ packages:
   - podman
   - podman-compose
   - aardvark-dns
+  - uidmap
+  - passt
   - git
   - sqlite3
   - age
@@ -77,6 +79,10 @@ write_files:
 
       # Decrypted PII lives in RAM — never page it to disk
       vm.swappiness = 0
+
+      # Rootless podman binds :80 and :443 for Caddy. Default threshold is 1024;
+      # lower it so the deploy user can publish those ports.
+      net.ipv4.ip_unprivileged_port_start = 80
 
       # SYN flood protection
       net.ipv4.tcp_syncookies = 1

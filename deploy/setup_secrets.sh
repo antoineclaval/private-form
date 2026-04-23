@@ -30,7 +30,10 @@ import secrets
 print(secrets.token_hex(32))
 " > "$SECRETS_DIR/phone_hash_salt.txt"
 
-chmod 600 "$SECRETS_DIR"/*.txt
+# Files must be world-readable so the container's non-root `appuser` can read
+# them through the bind mount. Host-level protection comes from the 700 dir
+# above — other host users can't traverse into secrets/ to reach the files.
+chmod 644 "$SECRETS_DIR"/*.txt
 
 echo ""
 echo "Secrets written to $SECRETS_DIR/"

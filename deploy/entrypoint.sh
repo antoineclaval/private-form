@@ -3,10 +3,17 @@
 # runs migrations, then starts gunicorn.
 set -eu
 
-# Read secrets from Podman secret mounts
-export DJANGO_SECRET_KEY="$(cat /run/secrets/django_secret)"
-export ENCRYPTION_KEYS="$(cat /run/secrets/encryption_keys)"
-export PHONE_HASH_SALT="$(cat /run/secrets/phone_hash_salt)"
+# Read secrets from Podman secret mounts. Fail loudly if unreadable — `set -e`
+# does NOT trigger on command-substitution failures inside assignments, so a
+# permission error on `cat` would otherwise silently export an empty string.
+read_secret() {
+    [ -r "$1" ] || { echo "entrypoint: cannot read $1 (permission or missing file)" >&2; exit 1; }
+    cat "$1"
+}
+DJANGO_SECRET_KEY="$(read_secret /run/secrets/django_secret)"
+ENCRYPTION_KEYS="$(read_secret /run/secrets/encryption_keys)"
+PHONE_HASH_SALT="$(read_secret /run/secrets/phone_hash_salt)"
+export DJANGO_SECRET_KEY ENCRYPTION_KEYS PHONE_HASH_SALT
 
 # ALLOWED_HOSTS must be set in compose.yaml environment block
 : "${ALLOWED_HOSTS:?ALLOWED_HOSTS env var is required}"

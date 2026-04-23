@@ -1,0 +1,111 @@
+/* ============================================================
+   Custom Styles
+   Mobile-first, minimal overrides on top of Pico CSS.
+   No JavaScript required — conditional sections use CSS only.
+   ============================================================ */
+
+/* Language switcher */
+.lang-switcher {
+  text-align: right;
+  font-size: 0.85rem;
+  margin-bottom: var(--pico-spacing);
+}
+
+/* Conditional sections: hidden by default */
+.section-ride,
+.section-food {
+  display: none;
+}
+
+/* Show ride section when a ride-type radio is checked.
+   Requires radio inputs to be siblings of the section divs. */
+#type-school:checked ~ .section-ride,
+#type-work:checked ~ .section-ride,
+#type-medical_legal:checked ~ .section-ride,
+#type-other:checked ~ .section-ride {
+  display: block;
+}
+
+/* Show food section when food radio is checked */
+#type-food:checked ~ .section-food {
+  display: block;
+}
+
+/* Radio inputs are visually hidden but accessible.
+   Labels act as the clickable element. */
+.radio-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.radio-cards input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.radio-cards label {
+  display: block;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--pico-form-element-border-color);
+  border-radius: var(--pico-border-radius);
+  cursor: pointer;
+  font-weight: normal;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.radio-cards input[type="radio"]:checked + label {
+  border-color: var(--pico-primary);
+  background-color: var(--pico-primary-background);
+  font-weight: bold;
+}
+
+.radio-cards input[type="radio"]:focus + label {
+  outline: 3px solid var(--pico-primary-focus);
+}
+
+/* Error messages */
+.field-error {
+  color: var(--pico-del-color);
+  font-size: 0.85rem;
+  margin-top: -0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.form-error-banner {
+  background: var(--pico-del-color);
+  color: white;
+  padding: var(--pico-spacing);
+  border-radius: var(--pico-border-radius);
+  margin-bottom: var(--pico-spacing);
+}
+
+/* Receipt page */
+.receipt-number {
+  font-size: 3rem;
+  font-weight: bold;
+  text-align: center;
+  letter-spacing: 0.1em;
+  color: var(--pico-primary);
+  padding: 1rem;
+}
+
+.receipt-box {
+  border: 2px solid var(--pico-primary);
+  border-radius: var(--pico-border-radius);
+  padding: 2rem;
+  text-align: center;
+  margin: 2rem auto;
+  max-width: 400px;
+}
+
+/* Instruction block at top of form */
+.instructions {
+  background: var(--pico-card-background-color);
+  border-left: 4px solid var(--pico-primary);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  border-radius: 0 var(--pico-border-radius) var(--pico-border-radius) 0;
+}

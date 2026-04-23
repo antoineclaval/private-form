@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {% if lang == "en" %}Mutual Aid Request{% else %}Solicitud de Ayuda Mutua{% endif %}
+{% endblock %}
+
+{% block content %}
+
+{# Language switcher — simple links, no JS, no cookies #}
+<div class="lang-switcher">
+  {% if lang == "en" %}
+    <a href="/es/">Español</a>
+  {% else %}
+    <a href="/en/">English</a>
+  {% endif %}
+</div>
+
+{# Instructions #}
+<div class="instructions">
+  {% if lang == "en" %}
+    <strong>Your information is kept private.</strong>
+    We will never share your information with anyone outside our team.
+    Fill out as much or as little as you are comfortable with.
+    After submitting, you will receive a receipt number — write it down.
+  {% else %}
+    <strong>Su información se mantiene privada.</strong>
+    Nunca compartiremos su información con nadie fuera de nuestro equipo.
+    Complete tanto o tan poco como se sienta cómodo/a.
+    Después de enviar, recibirá un número de recibo — anótelo.
+  {% endif %}
+</div>
+
+{# Global error banner #}
+{% if error %}
+  <div class="form-error-banner" role="alert">{{ error }}</div>
+{% endif %}
+{% if errors %}
+  <div class="form-error-banner" role="alert">
+    {% if lang == "en" %}Please correct the errors below.{% else %}Por favor corrija los errores a continuación.{% endif %}
+  </div>
+{% endif %}
+
+{# ------------------------------------------------------------------ #}
+{# FORM — @csrf_exempt on the view; we use a signed token instead.     #}
+{# All conditional sections must be SIBLINGS of the radio inputs       #}
+{# at the same DOM level for CSS :checked ~ sibling selectors to work. #}
+{# ------------------------------------------------------------------ #}
+<form method="post" action="" novalidate>
+  <input type="hidden" name="_form_token" value="{{ form_token }}">
+
+  {# ── Contact ── #}
+  <section aria-label="{% if lang == 'en' %}Contact{% else %}Contacto{% endif %}">
+    <h2>{% if lang == "en" %}Contact{% else %}Contacto{% endif %}</h2>
+    <p>
+      {% if lang == "en" %}
+        At least one contact method helps us reach you. You may leave both blank.
+      {% else %}
+        Al menos un método de contacto nos ayuda a comunicarnos con usted. Puede dejar ambos en blanco.
+      {% endif %}
+    </p>
+
+    <label for="id_phone">
+      {% if lang == "en" %}Phone Number{% else %}Número de teléfono{% endif %}
+    </label>
+    <input type="tel" id="id_phone" name="phone"
+           value="{{ post_data.phone|default:'' }}"
+           placeholder="{% if lang == 'en' %}e.g. 504-555-1234{% else %}ej. 504-555-1234{% endif %}"
+           autocomplete="off">
+    {% if errors.phone %}<p class="field-error">{{ errors.phone }}</p>{% endif %}
+
+    <label for="id_signal_username">
+      {% if lang == "en" %}Signal Username{% else %}Nombre de usuario de Signal{% endif %}
+    </label>
+    <input type="text" id="id_signal_username" name="signal_username"
+           value="{{ post_data.signal_username|default:'' }}"
+           placeholder="@username"
+           autocomplete="off">
+    <small>
+      {% if lang == "en" %}
+        Signal is an encrypted messaging app. Download at <strong>signal.org</strong>
+      {% else %}
+        Signal es una aplicación de mensajería cifrada. Descárguela en <strong>signal.org</strong>
+      {% endif %}
+    </small>
+    {% if errors.signal_username %}<p class="field-error">{{ errors.signal_username }}</p>{% endif %}
+  </section>
+
+  <hr>
+
+  {# ── Request type + all conditional sections as siblings ── #}
+  {# Radio inputs MUST be here, before the conditional sections. #}
+
+  <section aria-label="{% if lang == 'en' %}Type of request{% else %}Tipo de solicitud{% endif %}">
+    <h2>{% if lang == "en" %}What do you need?{% else %}¿Qué necesita?{% endif %}</h2>
+    {% if errors.request_type %}<p class="field-error">{{ errors.request_type }}</p>{% endif %}
+  </section>
+
+  {# Hidden radio inputs as siblings of conditional sections #}
+  <div class="radio-cards">
+    <input type="radio" name="request_type" value="food"          id="type-food"
+           {% if post_data.request_type == "food" %}checked{% endif %}>
+    <label for="type-food">🍎 {% if lang == "en" %}Food / Supply Delivery{% else %}Entrega de Comida / Provisiones{% endif %}</label>
+
+    <input type="radio" name="request_type" value="school"        id="type-school"
+           {% if post_data.request_type == "school" %}checked{% endif %}>
+    <label for="type-school">🏫 {% if lang == "en" %}School Ride{% else %}Transporte a la Escuela{% endif %}</label>
+
+    <input type="radio" name="request_type" value="work"          id="type-work"
+           {% if post_data.request_type == "work" %}checked{% endif %}>
+    <label for="type-work">💼 {% if lang == "en" %}Work Ride{% else %}Transporte al Trabajo{% endif %}</label>
+
+    <input type="radio" name="request_type" value="medical_legal" id="type-medical_legal"
+           {% if post_data.request_type == "medical_legal" %}checked{% endif %}>
+    <label for="type-medical_legal">🏥 {% if lang == "en" %}Medical / Legal Visit{% else %}Visita Médica / Legal{% endif %}</label>
+
+    <input type="radio" name="request_type" value="other"         id="type-other"
+           {% if post_data.request_type == "other" %}checked{% endif %}>
+    <label for="type-other">❓ {% if lang == "en" %}Other{% else %}Otro{% endif %}</label>
+  </div>
+
+  {# ── Ride details (CSS-controlled, no JS) ── #}
+  <fieldset class="section-ride">
+    <legend>{% if lang == "en" %}Ride Details{% else %}Detalles del Viaje{% endif %}</legend>
+
+    <label for="id_date_needed">
+      {% if lang == "en" %}Date of appointment / ride{% else %}Fecha de la cita / viaje{% endif %}
+    </label>
+    <input type="date" id="id_date_needed" name="date_needed"
+           value="{{ post_data.date_needed|default:'' }}">
+
+    <label for="id_time_preference">
+      {% if lang == "en" %}Preferred time{% else %}Hora preferida{% endif %}
+    </label>
+    <input type="text" id="id_time_preference" name="time_preference"
+           value="{{ post_data.time_preference|default:'' }}"
+           placeholder="{% if lang == 'en' %}e.g. 9:00am{% else %}ej. 9:00am{% endif %}">
+
+    <label for="id_pickup_location">
+      {% if lang == "en" %}Pickup address{% else %}Dirección de recogida{% endif %}
+    </label>
+    <input type="text" id="id_pickup_location" name="pickup_location"
+           value="{{ post_data.pickup_location|default:'' }}"
+           autocomplete="off">
+
+    <label for="id_pickup_neighborhood">
+      {% if lang == "en" %}Pickup neighborhood{% else %}Barrio de recogida{% endif %}
+    </label>
+    <input type="text" id="id_pickup_neighborhood" name="pickup_neighborhood"
+           value="{{ post_data.pickup_neighborhood|default:'' }}"
+           placeholder="{% if lang == 'en' %}e.g. Kenner, Metairie{% else %}ej. Kenner, Metairie{% endif %}">
+
+    <label for="id_dropoff_location">
+      {% if lang == "en" %}Drop-off address{% else %}Dirección de destino{% endif %}
+    </label>
+    <input type="text" id="id_dropoff_location" name="dropoff_location"
+           value="{{ post_data.dropoff_location|default:'' }}"
+           autocomplete="off">
+
+    <label for="id_dropoff_neighborhood">
+      {% if lang == "en" %}Drop-off neighborhood{% else %}Barrio de destino{% endif %}
+    </label>
+    <input type="text" id="id_dropoff_neighborhood" name="dropoff_neighborhood"
+           value="{{ post_data.dropoff_neighborhood|default:'' }}">
+
+    <label for="id_num_passengers">
+      {% if lang == "en" %}Number of passengers{% else %}Número de pasajeros{% endif %}
+    </label>
+    <input type="number" id="id_num_passengers" name="num_passengers"
+           value="{{ post_data.num_passengers|default:'' }}"
+           min="1" max="20">
+
+    <fieldset>
+      <label>
+        <input type="checkbox" name="is_round_trip"
+               {% if post_data.is_round_trip %}checked{% endif %}>
+        {% if lang == "en" %}Round trip?{% else %}¿Ida y vuelta?{% endif %}
+      </label>
+      <label>
+        <input type="checkbox" name="is_recurring"
+               {% if post_data.is_recurring %}checked{% endif %}>
+        {% if lang == "en" %}Recurring ride?{% else %}¿Viaje recurrente?{% endif %}
+      </label>
+    </fieldset>
+
+    <label for="id_recurring_schedule">
+      {% if lang == "en" %}Recurring schedule{% else %}Horario recurrente{% endif %}
+    </label>
+    <input type="text" id="id_recurring_schedule" name="recurring_schedule"
+           value="{{ post_data.recurring_schedule|default:'' }}"
+           placeholder="{% if lang == 'en' %}e.g. Mon–Fri, every Tues{% else %}ej. Lun–Vie, cada martes{% endif %}">
+  </fieldset>
+
+  {# ── Food/supply delivery details (CSS-controlled, no JS) ── #}
+  <fieldset class="section-food">
+    <legend>{% if lang == "en" %}Delivery Details{% else %}Detalles de Entrega{% endif %}</legend>
+
+    <label for="id_delivery_neighborhood">
+      {% if lang == "en" %}Your neighborhood{% else %}Su barrio{% endif %}
+    </label>
+    <input type="text" id="id_delivery_neighborhood" name="delivery_neighborhood"
+           value="{{ post_data.delivery_neighborhood|default:'' }}"
+           placeholder="{% if lang == 'en' %}e.g. Kenner, NO East{% else %}ej. Kenner, NO East{% endif %}">
+
+    <label for="id_delivery_day_preference">
+      {% if lang == "en" %}Preferred delivery day{% else %}Día preferido de entrega{% endif %}
+    </label>
+    <input type="text" id="id_delivery_day_preference" name="delivery_day_preference"
+           value="{{ post_data.delivery_day_preference|default:'' }}"
+           placeholder="{% if lang == 'en' %}e.g. Friday{% else %}ej. Viernes{% endif %}">
+
+    <label for="id_delivery_time_preference">
+      {% if lang == "en" %}Preferred delivery time{% else %}Hora preferida de entrega{% endif %}
+    </label>
+    <input type="text" id="id_delivery_time_preference" name="delivery_time_preference"
+           value="{{ post_data.delivery_time_preference|default:'' }}"
+           placeholder="{% if lang == 'en' %}e.g. morning{% else %}ej. mañana{% endif %}">
+
+    <label for="id_diaper_sizes">
+      {% if lang == "en" %}Diaper sizes needed (if any){% else %}Tallas de pañales (si aplica){% endif %}
+    </label>
+    <input type="text" id="id_diaper_sizes" name="diaper_sizes"
+           value="{{ post_data.diaper_sizes|default:'' }}"
+           placeholder="{% if lang == 'en' %}e.g. Size 3, Size 5{% else %}ej. Talla 3, Talla 5{% endif %}">
+  </fieldset>
+
+  <hr>
+
+  {# ── Additional needs (always visible) ── #}
+  <section>
+    <h2>{% if lang == "en" %}Additional Needs{% else %}Necesidades Adicionales{% endif %}</h2>
+
+    <fieldset>
+      <legend>
+        {% if lang == "en" %}Do you also need any of the following?{% else %}¿También necesita alguno de los siguientes?{% endif %}
+      </legend>
+      {% with additional=post_data.getlist|default:'' %}
+      <label><input type="checkbox" name="additional_requests" value="food"
+                    {% if "food" in post_data.getlist.additional_requests %}checked{% endif %}>
+        {% if lang == "en" %}Food{% else %}Comida{% endif %}</label>
+      <label><input type="checkbox" name="additional_requests" value="baby_supplies"
+                    {% if "baby_supplies" in post_data.getlist.additional_requests %}checked{% endif %}>
+        {% if lang == "en" %}Baby supplies{% else %}Artículos para bebé{% endif %}</label>
+      <label><input type="checkbox" name="additional_requests" value="diapers"
+                    {% if "diapers" in post_data.getlist.additional_requests %}checked{% endif %}>
+        {% if lang == "en" %}Diapers{% else %}Pañales{% endif %}</label>
+      <label><input type="checkbox" name="additional_requests" value="carseat"
+                    {% if "carseat" in post_data.getlist.additional_requests %}checked{% endif %}>
+        {% if lang == "en" %}Car seat{% else %}Silla de auto{% endif %}</label>
+      <label><input type="checkbox" name="additional_requests" value="legal"
+                    {% if "legal" in post_data.getlist.additional_requests %}checked{% endif %}>
+        {% if lang == "en" %}Legal help{% else %}Ayuda legal{% endif %}</label>
+      {% endwith %}
+    </fieldset>
+
+    <label for="id_notes">
+      {% if lang == "en" %}Anything else you want to tell us?{% else %}¿Algo más que quiera decirnos?{% endif %}
+    </label>
+    <textarea id="id_notes" name="notes" rows="4">{{ post_data.notes|default:'' }}</textarea>
+  </section>
+
+  <hr>
+
+  <button type="submit" class="contrast">
+    {% if lang == "en" %}Submit Request{% else %}Enviar Solicitud{% endif %}
+  </button>
+</form>
+
+{% endblock %}

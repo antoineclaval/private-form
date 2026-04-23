@@ -1,0 +1,43 @@
+# Private data — never commit
+*.csv
+secrets/
+*.sqlite3
+*.sqlite3-*
+backups/
+backup_pubkey.txt
+implementation.md
+
+# remote-setup.sh checkpoint files (live on the VPS)
+.remote_setup_state
+.cloud-init-done
+
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+.uv/
+*.egg-info/
+dist/
+build/
+
+# Django
+staticfiles/
+media/
+local_settings.py
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db

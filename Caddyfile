@@ -1,0 +1,39 @@
+# Private Form — Caddy reverse proxy configuration
+# Replace yourdomain.org with your actual domain before deploying.
+
+yourdomain.org {
+
+    # Serve static files directly from the shared volume — no Django hop
+    handle /static/* {
+        root * /srv
+        file_server
+    }
+
+    # Proxy everything else to Django/gunicorn
+    handle {
+        reverse_proxy web:8000
+    }
+
+    # Security headers
+    header {
+        # Prevent MIME sniffing
+        X-Content-Type-Options "nosniff"
+        # Clickjacking protection
+        X-Frame-Options "DENY"
+        # No referrer information leaves this site
+        Referrer-Policy "no-referrer"
+        # Disable FLoC / interest cohort tracking
+        Permissions-Policy "interest-cohort=()"
+        # HSTS: 1 year, include subdomains
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        # Remove server fingerprint
+        -Server
+        -X-Powered-By
+    }
+
+    # Do NOT log access requests — client IPs must not be stored
+    # (gunicorn is also configured with --access-logfile /dev/null)
+    log {
+        output discard
+    }
+}

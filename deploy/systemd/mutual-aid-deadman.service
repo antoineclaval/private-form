@@ -1,0 +1,10 @@
+[Unit]
+Description=Mutual Aid — Dead Man Switch Check
+Documentation=man:podman-exec(1)
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=podman exec mutual-aid-web-1 python manage.py check_deadman
+# If the container isn't running, this is a no-op (exit code ignored)
+IgnoreExitFailure=yes

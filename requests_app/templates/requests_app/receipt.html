@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {% if lang == "en" %}Request Received — #{{ request_number }}{% else %}Solicitud Recibida — #{{ request_number }}{% endif %}
+{% endblock %}
+
+{% block content %}
+
+<div class="receipt-box">
+  <p>
+    {% if lang == "en" %}Your request number is{% else %}Su número de solicitud es{% endif %}
+  </p>
+  <p class="receipt-number">{{ request_number }}</p>
+  <p>
+    {% if lang == "en" %}
+      <strong>Write this number down.</strong> Our team will contact you via phone or Signal.
+    {% else %}
+      <strong>Anote este número.</strong> Nuestro equipo le contactará por teléfono o Signal.
+    {% endif %}
+  </p>
+</div>
+
+<p style="text-align:center">
+  {% if lang == "en" %}
+    Need to make another request?
+    <a href="/en/">Submit a new form</a>
+  {% else %}
+    ¿Necesita hacer otra solicitud?
+    <a href="/es/">Enviar un nuevo formulario</a>
+  {% endif %}
+</p>
+
+{% endblock %}

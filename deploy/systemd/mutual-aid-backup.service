@@ -1,0 +1,22 @@
+[Unit]
+Description=Mutual Aid — Daily SQLite Backup
+After=network.target
+
+[Service]
+Type=oneshot
+# Backup the live database using SQLite's .backup API (safe while running)
+ExecStart=/bin/sh -c '\
+    DATE=$(date +%%Y%%m%%d) && \
+    BACKUP_DIR=/opt/mutual-aid/backups && \
+    mkdir -p $BACKUP_DIR && \
+    DB_MOUNT=$(podman volume inspect mutual-aid_db_data --format "{{.Mountpoint}}") && \
+    sqlite3 $DB_MOUNT/db.sqlite3 ".backup $BACKUP_DIR/db-$DATE.sqlite3" && \
+    age -r /opt/mutual-aid/backup_pubkey.txt \
+        -o $BACKUP_DIR/db-$DATE.sqlite3.age \
+        $BACKUP_DIR/db-$DATE.sqlite3 && \
+    rm $BACKUP_DIR/db-$DATE.sqlite3 && \
+    find $BACKUP_DIR -name "*.age" -mtime +30 -delete \
+'
+# Requires: sqlite3 and age installed on host
+# age public key stored in /opt/mutual-aid/backup_pubkey.txt
+# age private key stored OFFLINE (not on the VPS)

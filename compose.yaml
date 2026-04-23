@@ -1,0 +1,46 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Containerfile
+    environment:
+      ALLOWED_HOSTS: "${ALLOWED_HOSTS}"   # set in .env on the VPS
+    secrets:
+      - django_secret
+      - encryption_keys
+      - phone_hash_salt
+    volumes:
+      - db_data:/app/data
+      - static_files:/app/staticfiles
+    restart: unless-stopped
+    # No ports exposed directly — Caddy proxies to this container
+    # Network: both services share the default bridge network
+
+  caddy:
+    image: docker.io/library/caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"  # HTTP/3
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      - static_files:/srv/static:ro
+    restart: unless-stopped
+    depends_on:
+      - web
+
+volumes:
+  db_data:       # SQLite database — the single most important file
+  static_files:  # collectstatic output, served by Caddy
+  caddy_data:    # TLS certificates (Let's Encrypt)
+  caddy_config:  # Caddy internal config
+
+secrets:
+  django_secret:
+    file: ./secrets/django_secret.txt
+  encryption_keys:
+    file: ./secrets/encryption_keys.txt
+  phone_hash_salt:
+    file: ./secrets/phone_hash_salt.txt

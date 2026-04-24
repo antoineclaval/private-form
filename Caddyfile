@@ -20,8 +20,11 @@ yourdomain.org {
         X-Content-Type-Options "nosniff"
         # Clickjacking protection
         X-Frame-Options "DENY"
-        # No referrer information leaves this site
-        Referrer-Policy "no-referrer"
+        # No referrer leaves this site. Same-origin (not no-referrer) because
+        # no-referrer makes browsers send `Origin: null` on same-site form POSTs,
+        # which Django's CSRF layer rejects. same-origin keeps cross-site leaks
+        # blocked while preserving Origin for admin/login flows.
+        Referrer-Policy "same-origin"
         # Disable FLoC / interest cohort tracking
         Permissions-Policy "interest-cohort=()"
         # HSTS: 1 year, include subdomains

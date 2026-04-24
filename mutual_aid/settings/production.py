@@ -8,6 +8,10 @@ SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
 
 ALLOWED_HOSTS = os.environ["ALLOWED_HOSTS"].split(",")
 
+# Admin POSTs are HTTPS from outside, proxied to gunicorn over HTTP inside the
+# pod. Django's CSRF origin check needs the public scheme+host explicitly.
+CSRF_TRUSTED_ORIGINS = [f"https://{h}" for h in ALLOWED_HOSTS if h and h != "*"]
+
 # Read encryption keys (comma-separated, newest first)
 ENCRYPTION_KEYS = os.environ["ENCRYPTION_KEYS"].split(",")
 PHONE_HASH_SALT = os.environ["PHONE_HASH_SALT"]

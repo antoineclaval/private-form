@@ -47,10 +47,15 @@ class PIIScrubMiddleware:
         return None
 
 
+_IP_PRESERVED_PREFIXES = ("/admin/", "/account/")
+
+
 class StripClientIPMiddleware:
     """
     Overwrites client IP environ keys with 0.0.0.0 for all public-form requests.
-    Admin paths are left intact (needed for django-axes brute-force tracking).
+    Admin + auth paths are left intact: django-axes needs real IPs to distinguish
+    legitimate volunteers from brute-force attackers, and `/account/login/`
+    (two_factor wizard) is the actual login endpoint — not `/admin/login/`.
 
     This is a second line of defence. Primary protection is Caddy not logging IPs.
     """
@@ -59,7 +64,7 @@ class StripClientIPMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        if not request.path.startswith("/admin/"):
+        if not request.path.startswith(_IP_PRESERVED_PREFIXES):
             for key in _IP_ENVIRON_KEYS:
                 if key in request.META:
                     request.META[key] = _REDACTED

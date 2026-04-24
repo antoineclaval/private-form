@@ -158,5 +158,12 @@ LOGGING = {
             "level": "ERROR",
             "propagate": False,
         },
+        # CSRF rejection reasons (Origin/Referer/cookie mismatches) log at WARNING.
+        # Keep visible — they're operationally useful and don't contain PII.
+        "django.security.csrf": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
     },
 }

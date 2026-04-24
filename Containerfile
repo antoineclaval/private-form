@@ -7,6 +7,9 @@ FROM docker.io/library/python:3.13-slim
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/app/.venv/bin:$PATH"
+# Bake production settings into the image so ad-hoc `podman exec python manage.py ...`
+# hits the real DB instead of manage.py's development default.
+ENV DJANGO_SETTINGS_MODULE=mutual_aid.settings.production
 
 WORKDIR /app
 

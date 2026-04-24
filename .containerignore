@@ -1,0 +1,16 @@
+# Exclude host-only state from the production image build context.
+# Without this, `COPY . .` bakes in whatever happens to be on disk — including
+# dev SQLite files, which then populate the production named volume on first
+# mount and mask the real db.sqlite3.
+data/
+secrets/
+.env
+*.sqlite3
+*.sqlite3-*
+backups/
+.remote_setup_state
+.cloud-init-done
+.git/
+.venv/
+__pycache__/
+*.pyc
